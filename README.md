@@ -1,3 +1,7 @@
+规则更新：
+11月21日增加多多影音（网盘资源）
+11月22日增加真不卡影院（嗅探播放）
+
 # 新传的配置请搭配1.0.4版使用，否则可能出现异常。
 # 请务必转存到自己的仓库使用
 测试配置：https://ghp.ci/raw.githubusercontent.com/tt9912/tBox/refs/heads/main/配置.json
