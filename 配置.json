@@ -84,6 +84,20 @@
 		"keepPlayFileKeywords": "",
 		"selectedPlayer": "0"
 	},{
+		"key": "cloud189",
+		"name": "雷鲸(天翼云盘)",
+		"type": 5,
+		"searchable": 1,
+		"filterClass": "",
+		"firstClass": "",
+		"filterPlay": "",
+		"firstPlay": "",
+		"ext": "https://ghp.ci/raw.githubusercontent.com/tt9912/tBox/refs/heads/main/js/189.js",
+		"flagable": 0,
+		"filterPlayFileKeywords": "",
+		"keepPlayFileKeywords": "",
+		"selectedPlayer": "0"
+	},{
 		"key": "cfkj86",
 		"name": "金牌影院(直链)",
 		"type": 5,
