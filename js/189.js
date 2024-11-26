@@ -165,7 +165,7 @@ async function getStorage(key) {
 
 ///*
 //用node.js的req调试完毕后，改回以下函数
-//默认为dio库访问链接 type=1为http库
+//默认为http库访问链接 type=0为dio库
 async function req(url, options, type = 0) {
   options = options || {};
   try {
@@ -252,7 +252,7 @@ if (!match) {
   throw new Error("Invalid URL format");
 }
 const code = match[1] || match[3];
-const password = match[2] || match[4] || null;
+const password = match[2] || match[4] || '';
 console.log(code);
 console.log(password);
   let fileId;
@@ -271,6 +271,7 @@ console.log(password);
     }
     // 获取 shareId 和 fileId
     const apiUrl = `https://cloud.189.cn/api/open/share/getShareInfoByCodeV2.action?noCache=${Math.random()}&shareCode=${code}`;
+    console.log(apiUrl);
     const data = await fetchData(apiUrl);
     if (!shareId) {
       shareId = data.shareId;
@@ -318,10 +319,11 @@ async function fetchFilesAndFolders(fileId, shareId, password, files, pageNum = 
   if (password) {
       listShareUrl += password + '&shareMode=1';
   } else {
-      listShareUrl += password + '&shareMode=3';
+      listShareUrl += password + '&shareMode='+ shareMode;
   }
+  console.log('listShareUrl:  '+listShareUrl);
   const listShareData = await fetchData(listShareUrl);
-  
+  //https://cloud.189.cn/api/open/share/listShareDir.action?noCache=0.4058444088786157&pageNum=1&pageSize=60&fileId=324341156403250823&shareDirFileId=324341156403250823&isFolder=true&shareId=12400112663060&shareMode=3&iconOption=5&orderBy=lastOpTime&descending=true&accessCode=
   // 提取 mediaType 为 3 的文件
   listShareData.fileListAO.fileList.forEach(file => {
       if (file.mediaType === 3) {
@@ -355,7 +357,7 @@ async function fetchData(url) {
       },
   });
   let text = await response.text();
-  //console.log('天翼访问结果：'+text);
+  console.log('天翼访问结果：'+text);
   return JSON.parse(text);
 }
 
@@ -376,11 +378,12 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 //let leijingCookie = '变量名称保持不变，测试时填入雷鲸小站的cookie，发布时在设置中看下访问是否正常';
 //let cloud189Cookie = '变量名称保持不变，测试时填入天翼云盘cookie，发布时在设置中登录天翼云盘';
 let shareId;
-
+let shareMode=3;
+//let leijingCookie ='';
 //console.log('运行脚本');
 //homeContent();
 //categoryContent("42204792950357",1,null);
-//detailContent("thread?topicId=20703");
+//detailContent("thread?topicId=18263");
 //playerContent("924963167837060088");
 //searchContent("斗罗大陆");
 
@@ -452,7 +455,7 @@ async function detailContent(ids) {
         'Cookie': leijingCookie,
       },
     });
-    await toast("正在获取影片详情...", 2);
+    await toast("正在获取页面详情...", 2);
     let proData = await pro.text();
       const $ = cheerio.load(proData);
       let vod_content = '';
@@ -472,9 +475,9 @@ async function detailContent(ids) {
       let vod_actor = '';
       let vod_area = '';
       let linksWithAccessCode = new Set();
+      proData =文本_取中间(proData,'<div class="left">','<div class="right">');
       let regexWithAccessCode = /https:\/\/cloud\.189\.cn\/t\/[a-zA-Z0-9]+[\(（]访问码[:：][^\s]+[\)）]|https:\/\/cloud\.189\.cn\/t\/[a-zA-Z0-9]+|https:\/\/cloud\.189\.cn\/web\/share\?code=[A-Za-z0-9]+[\(（]访问码[:：][^\s]+[\)）]|https:\/\/cloud\.189\.cn\/web\/share\?code=[A-Za-z0-9]+/g;
-      let matchesWithAccessCode = 文本_取中间(proData,'<div class="left">','<div class="right">').match(regexWithAccessCode);
-      await toast("正在获取网盘剧集...", 2);
+      let matchesWithAccessCode = proData.match(regexWithAccessCode);
       if (matchesWithAccessCode) {
         matchesWithAccessCode.forEach((link) => {
           let cleanLink = link.match(/https:\/\/cloud\.189\.cn\/t\/[a-zA-Z0-9]+|https:\/\/cloud\.189\.cn\/web\/share\?code=[A-Za-z0-9]+/)[0];
@@ -490,11 +493,84 @@ async function detailContent(ids) {
           linksWithAccessCode.add(cleanLink);
         });
       }
+
+    let hrefRegex = /href="([^"]+)"/g;
+    let hrefMatches = proData.match(hrefRegex);
+    if (hrefMatches) {
+      hrefMatches.forEach((href) => {
+        let link = href.match(/href="([^"]+)"/)[1];
+        if (link.startsWith('https://cloud.189.cn/')) {
+          let decodedLink = decodeURIComponent(link);
+          let cleanLink = decodedLink.match(/https:\/\/cloud\.189\.cn\/t\/[a-zA-Z0-9]+|https:\/\/cloud\.189\.cn\/web\/share\?code=[A-Za-z0-9]+/)[0];
+          let accessCodeMatch = decodedLink.match(/[\(（]访问码[:：]([^\s]+)+[\)）]/);
+          if (accessCodeMatch) {
+            let accessCode = accessCodeMatch[1];
+            if (cleanLink.includes('/t/')) {
+              cleanLink += `?password=${accessCode}`;
+            } else {
+              cleanLink += `&password=${accessCode}`;
+            }
+          }
+          linksWithAccessCode.add(cleanLink);
+        }else if (link.startsWith('https://content.21cn.com/h5/subscrip/index.html#/pages/own-home/index')) {
+          let shareCodeMatch = link.match(/shareCode=([A-Za-z0-9]+)/);
+          if (shareCodeMatch) {
+            shareMode = 5;
+            let shareCode = shareCodeMatch[1];
+            let cloudLink = `https://cloud.189.cn/t/${shareCode}`;
+            linksWithAccessCode.add(cloudLink);
+          }
+        }
+      });
+    }
+
+ if (linksWithAccessCode.size === 0) {
+  let content21cnRegex = /https:\/\/content\.21cn\.com\/h5\/subscrip\/index\.html.*shareCode=([A-Za-z0-9]+)/g;
+  let content21cnMatches = proData.match(content21cnRegex);
+  if (content21cnMatches) {
+    shareMode = 5;
+    content21cnMatches.forEach((link) => {
+      let shareCodeMatch = link.match(/shareCode=([A-Za-z0-9]+)/);
+      if (shareCodeMatch) {
+        let shareCode = shareCodeMatch[1];
+        let cloudLink = `https://cloud.189.cn/t/${shareCode}`;
+        linksWithAccessCode.add(cloudLink);
+      }
+    });
+  }
+}
+
+
+    // 处理重复的 code 并优先保留包含 password 的链接
+    let codeMap = new Map();
+    for (let link of linksWithAccessCode) {
+      let codeMatch = link.match(/code=([A-Za-z0-9]+)|t\/([A-Za-z0-9]+)/);
+      if (codeMatch) {
+        let code = codeMatch[1] || codeMatch[2]; // 优先使用 code= 的匹配结果，如果没有则使用 t/ 的匹配结果
+        if (codeMap.has(code)) {
+          let existingLink = codeMap.get(code);
+          if (link.includes('password') && !existingLink.includes('password')) {
+            codeMap.set(code, link);
+          }
+        } else {
+          codeMap.set(code, link);
+        }
+      }
+    }
+
+    // 将处理后的链接重新放入 linksWithAccessCode
+    linksWithAccessCode.clear();
+    for (let link of codeMap.values()) {
+      linksWithAccessCode.add(link);
+    }
+
+     await toast("正在获取网盘剧集...", 2);
     // 调用 fetchShareInfo 获取结果
     let vod_play_from = '';
     let vod_play_url = '';
     let index = 1;
     for (let link of linksWithAccessCode) {
+      shareId='';
       console.log(link);
       let result = await fetchShareInfo(link);
       if (result) {
@@ -503,9 +579,9 @@ async function detailContent(ids) {
           vod_play_url += '$$$';
         }
         if (linksWithAccessCode.size === 1) {
-          vod_play_from += '播放列表';
+          vod_play_from += '天翼云盘';
         } else {
-          vod_play_from += `播放列表${index}`;
+          vod_play_from += `天翼云盘${index}`;
         }
         vod_play_url += result;
         index++;
@@ -530,7 +606,7 @@ async function detailContent(ids) {
       backData.msg = error.statusText;
   }
   //await toast(JSON.stringify(backData),5);
-  //console.log(JSON.stringify(backData));
+  console.log(JSON.stringify(backData));
   return JSON.stringify(backData);
 }
 
