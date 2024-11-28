@@ -421,7 +421,7 @@ async function toast(msg, seconds = 2) {
        }
        if (tBoxFid) {
          vodData.to_pdir_fid = tBoxFid;
-         await toast("正在获取影片文件信息", 2);
+         await toast('正在清空tBox文件夹内文件...',2);
          if (isQuark) {
            tBoxFileUrl = `https://drive-pc.quark.cn/1/clouddrive/file/sort?pr=ucpro&fr=pc&uc_param_str=&pdir_fid=${tBoxFid}&_page=1&_size=50&_fetch_total=1&_fetch_sub_dirs=0&_sort=file_type:asc,updated_at:desc`;
          } else {
@@ -453,6 +453,7 @@ async function toast(msg, seconds = 2) {
          }
        } else {
          // Step 3: Create tBox folder if not found
+         //await toast('首次运行,自动创建tBox文件夹...',2);
          const createParams = JSON.stringify({
            pdir_fid: "0",
            file_name: "tBox",
@@ -560,9 +561,6 @@ async function toast(msg, seconds = 2) {
          let retryCountForPlay = 0;
          let mySetCookie = null;
 
-
-
-
  const fetchPlayResponse = async (url, params, headers) => {
   return await 访问网页(url, 1, params, cookie, headers, 15000, (setCookie) => {
     mySetCookie = setCookie;
@@ -657,12 +655,6 @@ if (isQuark) {
   }
 }
 
-
-
-
-
-
-
          if (!videoLinks) {
            retryCount++;
            if (retryCount < 5) {
@@ -715,6 +707,28 @@ if (isQuark) {
        console.log(JSON.stringify(result));
        return JSON.stringify(result);
      } catch (error) {
+
+
+    let errorMessage;
+    if (Array.isArray(error)) {
+        errorMessage = error.map(err => {
+            if (typeof err === 'object' && err !== null) {
+                return err.message || JSON.stringify(err, null, 2);
+            } else if (typeof err === 'string') {
+                return err;
+            } else {
+                return String(err);
+            }
+        }).join('\n');
+    } else if (typeof error === 'object' && error !== null) {
+        errorMessage = error.message || JSON.stringify(error, null, 2);
+    } else if (typeof error === 'string') {
+        errorMessage = error;
+    } else {
+        errorMessage = String(error);
+    }
+
+         await toast(`获取影片链接失败: ${errorMessage}`,5);
        //console.error(error);
        const result = {
          parse: 1,
@@ -1451,15 +1465,14 @@ if (isQuark) {
        let vod_play_url = [];
        // 记录云盘名称的使用次数
        const cloudNameCount = {};
-       await toast('正在加载网盘剧集信息',2);
+       //await toast('正在加载网盘剧集信息',5);
    for (let i = 0; i < cloudLinks.length; i++) {
      const link = cloudLinks[i];
      if (link.includes('uc.cn') || link.includes('quark.cn')) {
+      let baseCloudName = link.includes('uc.cn') ? 'UC网盘' : '夸克网盘'; // 对应 vod_play_from
+       await toast(`正在获取第 ${i + 1} 个${baseCloudName}剧集信息`, 2); // 2 秒的持续时间
        const result = await fetchVideoFiles(link); // 所有播放链接对应 vod_play_url
-       
        if (result) { // 检查 result 是否为空
-         const baseCloudName = link.includes('uc.cn') ? 'UC网盘' : '夸克网盘'; // 对应 vod_play_from
-   
          // 检查云盘名称是否已经使用过
          if (cloudNameCount[baseCloudName] === undefined) {
            cloudNameCount[baseCloudName] = 1;
