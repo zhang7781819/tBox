@@ -18,6 +18,8 @@
 天翼云盘的cookie有严格的IP验证,切换IP后cookie就会无效，且ipv4和ipv6的cookie也无法混用。建议在电信的WIFI环境下使用(ipv4)。如雷鲸无返回数据，请在设置中打开一次该站点，该站点有时需效验。
 雷鲸小站本身无影片图片，故规则中仅调用了发帖者的头像图显示)
 
+11月29日：增加酷云影视（直链1080P）
+
 # 新传的配置请搭配1.0.4版以上使用，否则可能出现异常。
 # 请务必转存到自己的仓库使用
 ios端配置（支持嗅探）：https://ghp.ci/raw.githubusercontent.com/tt9912/tBox/refs/heads/main/配置.json
